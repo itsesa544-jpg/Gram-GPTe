@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 import { SuggestionButton } from './components/SuggestionButton';
@@ -39,13 +38,24 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   const [chat, setChat] = useState<Chat | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const chatSession = ai.chats.create({
-      model: 'gemini-2.5-flash',
-    });
-    setChat(chatSession);
+    try {
+      if (!process.env.API_KEY) {
+        throw new Error("API কী অনুপস্থিত।");
+      }
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const chatSession = ai.chats.create({
+        model: 'gemini-2.5-flash',
+      });
+      setChat(chatSession);
+    } catch (e: any) {
+      console.error("Initialization Failed:", e);
+      setError("অ্যাপটি শুরু করা যায়নি। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।");
+    } finally {
+      setIsInitializing(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -80,7 +90,7 @@ const App: React.FC = () => {
     setMessages((prevMessages) => [...prevMessages, newUserMessage]);
 
     try {
-      const response = await chat.sendMessage(userParts);
+      const response = await chat.sendMessage({ message: userParts });
 
       const modelResponseText = response.text;
       const newModelMessage: Message = { role: 'model', parts: [{ text: modelResponseText }] };
@@ -99,6 +109,30 @@ const App: React.FC = () => {
     'ধানক্ষেতের একটি ছবি আঁকো',
     'ফসলের রোগ নির্ণয় করতে সাহায্য করো',
   ];
+
+  if (isInitializing) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50 text-slate-600 font-sans">
+        <div className="flex flex-col items-center space-y-4">
+           <div className="bg-green-500 rounded-full p-4 animate-pulse">
+              <LogoIcon className="w-10 h-10 text-white" />
+            </div>
+          <p className="text-lg font-medium">গ্রামজিপিটি লোড হচ্ছে...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!chat) {
+     return (
+      <div className="flex items-center justify-center h-screen bg-slate-50 text-slate-600 font-sans p-4">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-lg border border-red-200 max-w-md w-full">
+           <h1 className="text-2xl font-bold text-red-600 mb-4">একটি সমস্যা হয়েছে</h1>
+           <p className="text-slate-700">{error || "একটি অজানা ত্রুটি ঘটেছে।"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen font-sans text-slate-800 flex flex-col h-screen">
