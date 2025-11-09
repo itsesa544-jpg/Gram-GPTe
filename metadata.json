@@ -1,0 +1,5 @@
+{
+  "name": "GramGPT",
+  "description": "A rural-focused AI assistant to help with weather, stories, agriculture, and more, presented in Bengali.",
+  "requestFramePermissions": []
+}
