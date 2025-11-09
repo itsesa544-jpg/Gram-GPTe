@@ -52,7 +52,7 @@ const App: React.FC = () => {
       setChat(chatSession);
     } catch (e: any) {
       console.error("Initialization Failed:", e);
-      setError("অ্যাপটি শুরু করা যায়নি। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।");
+      setError(e.message || "অ্যাপটি শুরু করা যায়নি। অনুগ্রহ করে পৃষ্ঠাটি রিফ্রেশ করুন।");
     } finally {
       setIsInitializing(false);
     }
