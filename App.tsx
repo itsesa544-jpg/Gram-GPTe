@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Chat } from '@google/genai';
 import { SuggestionButton } from './components/SuggestionButton';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessage } from './components/ChatMessage';
@@ -37,6 +38,15 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
+  const [chat, setChat] = useState<Chat | null>(null);
+
+  useEffect(() => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const chatSession = ai.chats.create({
+      model: 'gemini-2.5-flash',
+    });
+    setChat(chatSession);
+  }, []);
 
   useEffect(() => {
     if (chatHistoryRef.current) {
@@ -45,7 +55,7 @@ const App: React.FC = () => {
   }, [messages, isLoading]);
 
   const handleSendMessage = async (text: string, file: File | null) => {
-    if (isLoading || (!text.trim() && !file)) return;
+    if (isLoading || (!text.trim() && !file) || !chat) return;
 
     setIsLoading(true);
     setError(null);
@@ -67,17 +77,10 @@ const App: React.FC = () => {
     }
 
     const newUserMessage: Message = { role: 'user', parts: userParts };
-    const conversationHistory = [...messages, newUserMessage];
-    setMessages(conversationHistory);
+    setMessages((prevMessages) => [...prevMessages, newUserMessage]);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const model = 'gemini-2.5-flash';
-      
-      const response = await ai.models.generateContent({
-          model,
-          contents: conversationHistory,
-      });
+      const response = await chat.sendMessage(userParts);
 
       const modelResponseText = response.text;
       const newModelMessage: Message = { role: 'model', parts: [{ text: modelResponseText }] };
